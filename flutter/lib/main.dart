@@ -31,6 +31,10 @@ import 'models/platform_model.dart';
 import 'package:flutter_hbb/plugin/handlers.dart'
     if (dart.library.html) 'package:flutter_hbb/web/plugin/handlers.dart';
 
+import 'package:flutter_hbb/kvm/kvm_service.dart';
+import 'package:flutter_hbb/kvm/domain/kvm_state_provider.dart';
+import 'package:flutter_hbb/kvm/presentation/kvm_onboarding_screen.dart';
+
 /// Basic window and launch properties.
 int? kWindowId;
 WindowType? kWindowType;
@@ -407,9 +411,17 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> with WidgetsBindingObserver {
+  
+  late KVMStateProvider kvmState;
+
   @override
   void initState() {
     super.initState();
+    
+    // ## KVM integration
+    kvmState = KVMStateProvider();
+    KVMService().start(kvmState);
+
     WidgetsBinding.instance.window.onPlatformBrightnessChanged = () {
       final userPreference = MyTheme.getThemeModePreference();
       if (userPreference != ThemeMode.system) return;
@@ -474,6 +486,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
           ChangeNotifierProvider.value(value: gFFI.cursorModel),
           ChangeNotifierProvider.value(value: gFFI.canvasModel),
           ChangeNotifierProvider.value(value: gFFI.peerTabModel),
+          ChangeNotifierProvider.value(value: kvmState), // ## KVM integration
         ],
         child: GetMaterialApp(
           navigatorKey: globalKey,
@@ -484,11 +497,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
           theme: MyTheme.lightTheme,
           darkTheme: MyTheme.darkTheme,
           themeMode: MyTheme.currentThemeMode(),
-          home: isDesktop
-              ? const DesktopTabPage()
-              : isWeb
-                  ? WebHomePage()
-                  : HomePage(),
+          home: KVMOnboardingScreen(),
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,

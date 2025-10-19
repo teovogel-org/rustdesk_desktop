@@ -22,6 +22,8 @@ import '../widgets/dialog.dart';
 import 'home_page.dart';
 import 'scan_page.dart';
 
+import 'package:flutter_hbb/kvm/presentation/widgets/kvm_settings_section.dart';
+
 class SettingsPage extends StatefulWidget implements PageShape {
   @override
   final title = translate("Settings");
@@ -637,6 +639,8 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
         bind.mainGetBuildinOption(key: kOptionHideSecuritySetting) == 'Y';
     final settings = SettingsList(
       sections: [
+        // ## KVM integration
+        KVMSettingsSection(),
         customClientSection,
         if (!bind.isDisableAccount())
           SettingsSection(

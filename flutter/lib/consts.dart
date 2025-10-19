@@ -355,6 +355,17 @@ class AndroidChannel {
   static final kSyncAppDirConfigPath = "sync_app_dir";
 }
 
+/// KVM integration
+class AndroidKVMChannel {
+  static final kSetHeartbeatRefreshRate = "set_heartbeat_refresh_rate";
+  static final kGetMacAddres = "get_mac_address";
+  static final kGetAndroidId = "get_android_id";
+  static final kGetSerialNo = "get_serial_no";
+  static final kGetKVMId = "get_kvm_id";
+}
+
+const kHeartbeatDefaultRefreshRate = 20;
+
 /// flutter/packages/flutter/lib/src/services/keyboard_key.dart -> _keyLabels
 /// see [LogicalKeyboardKey.keyLabel]
 const Map<int, String> logicalKeyMap = <int, String>{
