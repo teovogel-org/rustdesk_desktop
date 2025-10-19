@@ -108,7 +108,8 @@ Future<void> main(List<String> args) async {
   } else {
     desktopType = DesktopType.main;
     await windowManager.ensureInitialized();
-    windowManager.setPreventClose(true);
+    // ## KVM integration
+    //windowManager.setPreventClose(true);
     if (isMacOS) {
       disableWindowMovable(kWindowId);
     }
@@ -151,16 +152,17 @@ void runMainApp(bool startService) async {
     // Restore the location of the main window before window hide or show.
     await restoreWindowPosition(WindowType.Main);
     // Check the startup argument, if we successfully handle the argument, we keep the main window hidden.
-    final handledByUniLinks = await initUniLinks();
-    debugPrint("handled by uni links: $handledByUniLinks");
-    if (handledByUniLinks || handleUriLink(cmdArgs: kBootArgs)) {
-      windowManager.hide();
-    } else {
+    // ## KVM integration
+    //final handledByUniLinks = await initUniLinks();
+    //debugPrint("handled by uni links: $handledByUniLinks");
+    //if (handledByUniLinks || handleUriLink(cmdArgs: kBootArgs)) {
+    //  windowManager.hide();
+    //} else {
       windowManager.show();
       windowManager.focus();
       // Move registration of active main window here to prevent from async visible check.
       rustDeskWinManager.registerActiveWindow(kWindowMainId);
-    }
+    //}
     windowManager.setOpacity(1);
     windowManager.setTitle(getWindowName());
     // Do not use `windowManager.setResizable()` here.
@@ -226,7 +228,7 @@ void runMultiWindow(
   );
   // we do not hide titlebar on win7 because of the frame overflow.
   if (kUseCompatibleUiMode) {
-    WindowController.fromWindowId(kWindowId!).showTitleBar(true);
+    WindowController.fromWindowId(kWindowId!).showTitleBar(false);
   }
   switch (appType) {
     case kAppTypeDesktopRemote:
@@ -285,7 +287,8 @@ void runConnectionManagerScreen() async {
   }
   setResizable(false);
   // Start the uni links handler and redirect links to Native, not for Flutter.
-  listenUniLinks(handleByFlutter: false);
+  // ## KVM integration
+  //listenUniLinks(handleByFlutter: false);
 }
 
 bool _isCmReadyToShow = false;
@@ -399,8 +402,8 @@ WindowOptions getHiddenTitleBarWindowOptions(
     size: size,
     center: center,
     backgroundColor: (isMacOS && isMainWindow) ? null : Colors.transparent,
-    skipTaskbar: false,
-    titleBarStyle: defaultTitleBarStyle,
+    //skipTaskbar: false,
+    titleBarStyle: TitleBarStyle.normal,
     alwaysOnTop: alwaysOnTop,
   );
 }
@@ -420,7 +423,27 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     
     // ## KVM integration
     kvmState = KVMStateProvider();
-    KVMService().start(kvmState);
+    KVMService()
+      ..start(kvmState)
+      ..initAppLinks((link) async {
+        try {
+          windowManager.focus();
+          await kvmState.handleDeepLink(link);
+        } catch (e) {
+          if (context.mounted) {
+              gFFI.dialogManager.show((setState, close, context) {
+              return CustomAlertDialog(
+                title: Text(link),
+                content: Text(e.toString(), style: TextStyle(color: Colors.red),), 
+                actions: [
+                  dialogButton("OK", onPressed: close, isOutline: true),
+                ],
+                onCancel: close,
+              );
+            });
+          }
+        }
+      });
 
     WidgetsBinding.instance.window.onPlatformBrightnessChanged = () {
       final userPreference = MyTheme.getThemeModePreference();

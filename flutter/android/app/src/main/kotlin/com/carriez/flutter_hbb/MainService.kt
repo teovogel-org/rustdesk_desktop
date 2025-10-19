@@ -191,6 +191,23 @@ class MainService : Service() {
     private var serviceLooper: Looper? = null
     private var serviceHandler: Handler? = null
 
+    // ## KVM integration
+    private var heartbeatRefreshRate = HEARTBEAT_DEFAULT_REFRESH_RATE
+    fun setHeartbeatRefreshRate(rate: Int) {
+        heartbeatRefreshRate = rate
+    }
+    private val heartbeatHandler = Handler(Looper.getMainLooper())
+    private val heartbeatRunnable = object : Runnable {
+        override fun run() {
+            Log.d(logTag, "heartbeatHandler run")
+            MainActivity.flutterMethodChannel?.invokeMethod(
+                "send_kvm_heartbeat",
+                null
+            )
+            heartbeatHandler.postDelayed(this, heartbeatRefreshRate * 1000L)
+        }
+    }
+
     private val powerManager: PowerManager by lazy { applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager }
     private val wakeLock: PowerManager.WakeLock by lazy { powerManager.newWakeLock(PowerManager.ACQUIRE_CAUSES_WAKEUP or PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "rustdesk:wakelock")}
 
@@ -250,6 +267,8 @@ class MainService : Service() {
 
     override fun onDestroy() {
         checkMediaPermission()
+        // ## KVM integration
+        heartbeatHandler.removeCallbacks(heartbeatRunnable)
         stopService(Intent(this, FloatingWindowService::class.java))
         super.onDestroy()
     }
@@ -346,6 +365,11 @@ class MainService : Service() {
                 requestMediaProjection()
             }
         }
+
+        // ## KVM integration
+        Log.d(logTag, "heartbeatHandler post")
+        heartbeatHandler.post(heartbeatRunnable)
+
         return START_NOT_STICKY // don't use sticky (auto restart), the new service (from auto restart) will lose control
     }
 
@@ -440,6 +464,8 @@ class MainService : Service() {
     @Synchronized
     fun stopCapture() {
         Log.d(logTag, "Stop Capture")
+        // ## KVM integration
+        heartbeatHandler.removeCallbacks(heartbeatRunnable)
         FFI.setFrameRawEnable("video",false)
         _isStart = false
         MainActivity.rdClipboardManager?.setCaptureStarted(_isStart)

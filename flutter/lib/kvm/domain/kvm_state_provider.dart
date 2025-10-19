@@ -109,7 +109,7 @@ class KVMStateProvider with ChangeNotifier {
     return Future.error(Exception("Algo salió mal"));
   }
 
-  Future<KVMDevice?> login(String email, String password) async {
+  Future<bool> login(String email, String password) async {
     return _apiRequest(() async {
       final (session, device) = await KVMApi.login(
         email,
@@ -118,7 +118,7 @@ class KVMStateProvider with ChangeNotifier {
       );
       this.device = device;
       onLoginSuccess(session, device, email, password);
-      return device;
+      return true;
     });
   }
 
@@ -148,6 +148,35 @@ class KVMStateProvider with ChangeNotifier {
       onDeviceRegistered(device);
       return device;
     });
+  }
+
+  Future<void> handleDeepLink(String link) async {
+    if (nextStepState is! KVMStepLogin) {
+      return;
+    }
+    // Parse the link as URI to extract query parameters
+    final Uri uri = Uri.parse(link);
+    final Map<String, String> queryParams = uri.queryParameters;
+    
+    final email = queryParams['id'];
+    final password = queryParams['pass'];
+
+    if (email == null || password == null) {
+      return;
+    }
+
+    // tries to login three times in case of backend internal errors
+    final numberOfAttempts = 3;
+    for (var attempt = 1; attempt <= numberOfAttempts; attempt++) {
+      try { 
+        await login(email, password);
+        break;
+      } catch (err) {
+        if (attempt == 2) {
+          rethrow;
+        }
+      }
+    }
   }
   
 }

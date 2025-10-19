@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/consts.dart';
@@ -5,6 +8,7 @@ import 'package:flutter_hbb/kvm/constants.dart';
 import 'package:flutter_hbb/kvm/data/kvm_api.dart';
 import 'package:flutter_hbb/kvm/domain/kvm_state_provider.dart';
 import 'package:flutter_hbb/kvm/kvm_utils.dart';
+import 'package:flutter_hbb/kvm/windows_url_registrar.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:get/get.dart';
 
@@ -28,6 +32,30 @@ class KVMService {
   void start(KVMStateProvider kvmState) async {
     this.kvmState = kvmState;
     setHeartbeatRefreshRate();
+  }
+
+  Future<void> initAppLinks(Function(String) handleDeepLink) async {
+    final appLinks = AppLinks();
+
+    // Register URL scheme on Windows
+    if (Platform.isWindows) {
+      await WindowsUrlSchemeRegistrar.registerScheme('dexremote');
+    }
+
+    try {
+      // Handle deep links when app is already running
+      appLinks.uriLinkStream.listen((uri) {
+        handleDeepLink(uri.toString());
+      });
+
+      // Handle deep links when app is opened from closed state
+      final Uri? initialUri = await appLinks.getInitialLink();
+      if (initialUri != null) {
+        handleDeepLink(initialUri.toString());
+      }
+    } catch (e) {
+      // Handle exception by ignoring it (as requested - no error handling)
+    }
   }
 
   static void setHeartbeatRefreshRate() {

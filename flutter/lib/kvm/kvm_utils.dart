@@ -9,6 +9,9 @@ import 'package:windows_system_info/windows_system_info.dart';
 
 abstract class KVMUtils {
   static Future<String> getSerialNO() async {
+    if (!Platform.isAndroid) {
+      return "null";
+    }
     return await platformFFI.invokeMethod(AndroidKVMChannel.kGetKVMId);
   }
 

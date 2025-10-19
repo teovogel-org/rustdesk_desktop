@@ -1,4 +1,5 @@
-const kvmApi = "your-kvm-api";
+//const kvmApi = "your-kvm-api";
+const kvmApi = "https://kvm.jmbajo.com/api";
 
 const defaultHeartbeatS = 60;
 
