@@ -828,7 +828,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         }
       }
     });
-    _uniLinksSubscription = listenUniLinks();
+    // ## KVM integration
+    //_uniLinksSubscription = listenUniLinks();
 
     if (bind.isIncomingOnly()) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

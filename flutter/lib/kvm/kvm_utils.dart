@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 //import 'package:disk_space/disk_space.dart';
@@ -59,5 +61,34 @@ abstract class KVMUtils {
 
   static Future<int> getFreeDiskSpaceInMB() async {
     return -1; //(await DiskSpace.getFreeDiskSpace)?.toInt() ?? -1;
+  }
+
+  static void handleDeepLink(BuildContext context, String link) {
+    final Uri uri = Uri.parse(link);
+    final Map<String, String> queryParams = uri.queryParameters;
+    
+    final id = queryParams['id'];
+    final password = queryParams['pass'];
+
+    if (id == null || password == null) {
+      return;
+    }
+    
+    gFFI.dialogManager.show((setState, close, context) {
+      return CustomAlertDialog(
+        title: Text("Connect to:"),
+        content: Column(
+          children: [
+            Text("[id]: $id"),
+            Text("[password]: $password"),
+          ],
+        ), 
+        actions: [
+          dialogButton("Cancel", onPressed: close, isOutline: true),
+          dialogButton("Connect", onPressed: () { connect(context, id, password: password);}),
+        ],
+        onCancel: close,
+      );
+    });
   }
 }

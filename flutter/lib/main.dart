@@ -15,6 +15,7 @@ import 'package:flutter_hbb/desktop/screen/desktop_view_camera_screen.dart';
 import 'package:flutter_hbb/desktop/screen/desktop_port_forward_screen.dart';
 import 'package:flutter_hbb/desktop/screen/desktop_remote_screen.dart';
 import 'package:flutter_hbb/desktop/widgets/refresh_wrapper.dart';
+import 'package:flutter_hbb/kvm/kvm_utils.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -108,8 +109,7 @@ Future<void> main(List<String> args) async {
   } else {
     desktopType = DesktopType.main;
     await windowManager.ensureInitialized();
-    // ## KVM integration
-    //windowManager.setPreventClose(true);
+    windowManager.setPreventClose(true);
     if (isMacOS) {
       disableWindowMovable(kWindowId);
     }
@@ -179,7 +179,8 @@ void runMobileApp() async {
   await Future.wait([gFFI.abModel.loadCache(), gFFI.groupModel.loadCache()]);
   gFFI.userModel.refreshCurrentUser();
   runApp(App());
-  await initUniLinks();
+  // ## KVM integration
+  //await initUniLinks();
 }
 
 void runMultiWindow(
@@ -228,7 +229,7 @@ void runMultiWindow(
   );
   // we do not hide titlebar on win7 because of the frame overflow.
   if (kUseCompatibleUiMode) {
-    WindowController.fromWindowId(kWindowId!).showTitleBar(false);
+    WindowController.fromWindowId(kWindowId!).showTitleBar(true);
   }
   switch (appType) {
     case kAppTypeDesktopRemote:
@@ -402,8 +403,8 @@ WindowOptions getHiddenTitleBarWindowOptions(
     size: size,
     center: center,
     backgroundColor: (isMacOS && isMainWindow) ? null : Colors.transparent,
-    //skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.normal,
+    skipTaskbar: false,
+    titleBarStyle: defaultTitleBarStyle,
     alwaysOnTop: alwaysOnTop,
   );
 }
@@ -426,24 +427,10 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     KVMService()
       ..start(kvmState)
       ..initAppLinks((link) async {
-        try {
           windowManager.focus();
-          await kvmState.handleDeepLink(link);
-        } catch (e) {
-          if (context.mounted) {
-              gFFI.dialogManager.show((setState, close, context) {
-              return CustomAlertDialog(
-                title: Text(link),
-                content: Text(e.toString(), style: TextStyle(color: Colors.red),), 
-                actions: [
-                  dialogButton("OK", onPressed: close, isOutline: true),
-                ],
-                onCancel: close,
-              );
-            });
-          }
+          KVMUtils.handleDeepLink(context, link);
         }
-      });
+      );
 
     WidgetsBinding.instance.window.onPlatformBrightnessChanged = () {
       final userPreference = MyTheme.getThemeModePreference();
@@ -520,7 +507,11 @@ class _AppState extends State<App> with WidgetsBindingObserver {
           theme: MyTheme.lightTheme,
           darkTheme: MyTheme.darkTheme,
           themeMode: MyTheme.currentThemeMode(),
-          home: KVMOnboardingScreen(),
+          home: isDesktop
+              ? const DesktopTabPage()
+              : isWeb
+                  ? WebHomePage()
+                  : HomePage(),
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,

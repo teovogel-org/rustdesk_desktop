@@ -149,34 +149,5 @@ class KVMStateProvider with ChangeNotifier {
       return device;
     });
   }
-
-  Future<void> handleDeepLink(String link) async {
-    if (nextStepState is! KVMStepLogin) {
-      return;
-    }
-    // Parse the link as URI to extract query parameters
-    final Uri uri = Uri.parse(link);
-    final Map<String, String> queryParams = uri.queryParameters;
-    
-    final email = queryParams['id'];
-    final password = queryParams['pass'];
-
-    if (email == null || password == null) {
-      return;
-    }
-
-    // tries to login three times in case of backend internal errors
-    final numberOfAttempts = 3;
-    for (var attempt = 1; attempt <= numberOfAttempts; attempt++) {
-      try { 
-        await login(email, password);
-        break;
-      } catch (err) {
-        if (attempt == 2) {
-          rethrow;
-        }
-      }
-    }
-  }
   
 }

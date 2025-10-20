@@ -52,7 +52,8 @@ class _ConnectionPageState extends State<ConnectionPage> {
   Iterable<Peer> _autocompleteOpts = [];
 
   _ConnectionPageState() {
-    if (!isWeb) _uniLinksSubscription = listenUniLinks();
+    // ## KVM integration
+    //if (!isWeb) _uniLinksSubscription = listenUniLinks();
     _idController.addListener(() {
       _idEmpty.value = _idController.text.isEmpty;
     });
